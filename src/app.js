@@ -1,36 +1,40 @@
 const express = require('express');
 const app = express(); // creating express js application 
-const {auth} = require('./middlewares/auth'); // importing auth middleware
+const ConnectDB  = require("./config/database");// connecting to the database
+const User = require("./models/user"); // importing the user model
 
-// one way to handle errors is to use try-catch blocks in route handlers .
-app.get('/admin',(req , res)=>{
-    try{
-    console.log("Admin route accessed");
-    throw new Error("Simulated error for testing error handling");
-    res.send("Welcome to the admin page");
+// adding the data to the database . 
+app.post("/signup",async(req,res)=>{
+    const DummyUser = {
+        firstName : "Shruti",
+        lastName : "Jadhav",
+        emailid : "shrutijadhav@gmail.com",
+        password :"shruti123",
+        age : 46
     }
-    catch(err){
-        console.error("Error in admin route:", err);
-        res.status(500).send("Internal Server Error");
-    }
+    // creating instance of the user model .
+    const user = new User(DummyUser);
+
+    // saving the user to the database
+    await user.save().then(()=>{
+        console.log("User created successfully");
+    }).catch((err)=>{
+        console.error("Error creating user: ", err);
+        return res.status(500).send("Error creating user");
+    });
+
+    // sending response to the client
+    res.send("User created successfully");
 });
 
-// another way to handle errors is to use middleware functions that catch errors and send a response.
-app.get('/admin',(req,res,next)=>{
-    console.log("Admin route accessed");
-    // Simulating an error
-    const error = new Error("Simulated error for testing error handling");
-    next(error); // Pass the error to the next middleware
-});
-
-app.use((err,req,res,next)=>{
-        // This middleware will catch any errors passed to next(err) in the route handlers.
-        console.error("An error occurred:", err);
-        res.status(500).send("Internal Server Error");
-});
-
-
-app.listen(3000 , ()=>{
-    console.log("server is running on port 3000");  
+// we should connect to the database before starting the server .
+ConnectDB()
+.then(()=>{
+    console.log("Database connected successfully");
+    app.listen(3000 , ()=>{
+    console.log("server is running on port 3000");  // connection to the server
+    });
+}).catch((err)=>{
+    console.error("Database connection failed");
 });
 
