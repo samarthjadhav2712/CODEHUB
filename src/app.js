@@ -3,17 +3,13 @@ const app = express(); // creating express js application
 const ConnectDB  = require("./config/database");// connecting to the database
 const User = require("./models/user"); // importing the user model
 
+//app.use(); -> this will run for every request that comes to the server
+app.use(express.json()); // middleware to parse json data from the request body
+
 // adding the data to the database . 
 app.post("/signup",async(req,res)=>{
-    const DummyUser = {
-        firstName : "Shruti",
-        lastName : "Jadhav",
-        emailid : "shrutijadhav@gmail.com",
-        password :"shruti123",
-        age : 46
-    }
     // creating instance of the user model .
-    const user = new User(DummyUser);
+    const user = new User(req.body);
 
     // saving the user to the database
     await user.save().then(()=>{

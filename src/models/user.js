@@ -17,6 +17,9 @@ const userSchema = new mongoose.Schema({
     age:{
         type : Number
     }
+},{
+    strict : true, // this will ensure that only the fields defined in the schema will be saved to the database
+    timestamps : true // this will add createdAt and updatedAt fields to the schema
 });
 
 //Model creation
