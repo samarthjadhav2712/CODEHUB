@@ -11,7 +11,7 @@ app.use(express.json()); // middleware to parse json data from the request body
 // getting the data from the database and sending it to the client .
 app.get("/get",async(req,res)=>{
     try{
-        const users = await User.find({emailid: req.body.emailid}); // find the user by emailid
+        const users = await User.findById(req.body._id); // find the user by emailid
         if(users.length===0){
             return res.status(404).send("User not found");
         }
@@ -41,6 +41,21 @@ app.get("/feed",async(req,res)=>{
     }
 });
 
+app.delete("/delete",async(req,res)=>{
+    const userid = req.body.id; // getting the user id from the request body
+    try{
+        const user = await User.findByIdAndDelete(userid);
+        if(!user){
+            return res.status(404).send("User not found");
+        }
+        else{
+            res.send("User deleted successfully");
+        }
+    }  
+    catch(err){
+        return res.status(400).send("Error deleting user");
+    }
+});
 
 // adding the data to the database . 
 app.post("/signup",async(req,res)=>{
@@ -59,6 +74,23 @@ app.post("/signup",async(req,res)=>{
     res.send("User created successfully");
 });
 
+app.patch("/update",async(req,res)=>{
+    const user = req.body; // getting the user data 
+    const userid = req.body._id; // getting the user id 
+    try{
+        const updatedUser = await User.findByIdAndUpdate(userid , user, {new: true}); // updating the user by id . 
+        if(!updatedUser){
+            return res.status(404).send("User not found");
+        }
+        else{
+            res.send(updatedUser);
+            console.log(updatedUser);
+        }
+    }
+    catch(err){
+        return res.status(400).send("Error updating user");
+    }
+});
 
 // we should connect to the database before starting the server .
 ConnectDB()
@@ -70,4 +102,3 @@ ConnectDB()
 }).catch((err)=>{
     console.error("Database connection failed");
 });
-
