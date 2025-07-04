@@ -9,14 +9,30 @@ const userSchema = new mongoose.Schema({
         type : String 
     },
     emailid:{
-        type : String
+        type : String,
+        required : true,
+        unique : true,
     },
     password:{
-        type : String
+        type : String,
+        required :true,
+        minlength : 5,
     },
     age:{
         type : Number
-    }
+    },
+    photourl :{
+        type : String , 
+        default : "https://png.pngtree.com/element_our/20200610/ourmid/pngtree-black-default-avatar-image_2237212.jpg",
+    },
+    Gender : {
+        type : String , 
+        validate(value){
+            if(!["male","female","other"].includes(value)){
+                throw new Error("Gender data not valid");
+            }
+        },
+    },
 },{
     strict : true, // this will ensure that only the fields defined in the schema will be saved to the database
     timestamps : true // this will add createdAt and updatedAt fields to the schema

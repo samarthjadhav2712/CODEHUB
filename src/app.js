@@ -41,6 +41,8 @@ app.get("/feed",async(req,res)=>{
     }
 });
 
+
+// deleting the user from the database by id .
 app.delete("/delete",async(req,res)=>{
     const userid = req.body.id; // getting the user id from the request body
     try{
@@ -56,6 +58,7 @@ app.delete("/delete",async(req,res)=>{
         return res.status(400).send("Error deleting user");
     }
 });
+
 
 // adding the data to the database . 
 app.post("/signup",async(req,res)=>{
@@ -74,11 +77,16 @@ app.post("/signup",async(req,res)=>{
     res.send("User created successfully");
 });
 
+
+// updating the user data in the database by id .
 app.patch("/update",async(req,res)=>{
     const user = req.body; // getting the user data 
     const userid = req.body._id; // getting the user id 
     try{
-        const updatedUser = await User.findByIdAndUpdate(userid , user, {new: true}); // updating the user by id . 
+        const updatedUser = await User.findByIdAndUpdate(userid , user, {new: true},{runValidators : true});
+         // updating the user by id . 
+         // new : true will return the updated user object
+        // runValidators : true will ensure that the validators defined in the schema are run when updating the user.
         if(!updatedUser){
             return res.status(404).send("User not found");
         }
@@ -91,6 +99,7 @@ app.patch("/update",async(req,res)=>{
         return res.status(400).send("Error updating user");
     }
 });
+
 
 // we should connect to the database before starting the server .
 ConnectDB()
