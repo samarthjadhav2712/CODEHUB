@@ -62,28 +62,54 @@ app.delete("/delete",async(req,res)=>{
 
 // adding the data to the database . 
 app.post("/signup",async(req,res)=>{
+    try{
     // creating instance of the user model .
     const user = new User(req.body);
 
     // saving the user to the database
-    await user.save().then(()=>{
-        console.log("User created successfully");
-    }).catch((err)=>{
-        console.error("Error creating user: ", err);
-        return res.status(500).send("Error creating user");
-    });
-
-    // sending response to the client
+    await user.save();
     res.send("User created successfully");
+    }
+    catch(err){
+        if(err.code === 11000) {
+            // 11000 is the error code for duplicate key error
+            return res.status(400).send("Email already exists");
+        }
+
+        if(err.name === 'ValidationError') {
+            // Handle validation errors
+            return res.status(400).send(err.message);
+        }
+
+         res.status(500).send("Error creating user");
+    }
 });
 
 
 // updating the user data in the database by id .
-app.patch("/update",async(req,res)=>{
-    const user = req.body; // getting the user data 
-    const userid = req.body._id; // getting the user id 
+app.patch("/update/:userid",async(req,res)=>{
+    //const user = req.body;  ...getting the user data 
+    // const userid = req.body._id;   ...getting the user id 
+
+    //destructuring so that we cant update the id field
+    //const {_id : userid , ...user} = req.body; getting the user id and rest of the user data
+
+    const userid = req.params.userid; // getting the user id from the request params
+    const user = req.body;
     try{
-        const updatedUser = await User.findByIdAndUpdate(userid , user, {new: true},{runValidators : true});
+    //only allow updates for fields that wont create issues with db . (such as emailid and password)
+    const allowedUpdates = ["firstName" , "lastName" , "photourl" , "Gender","skills"];
+    const validupdates = Object.keys(user).every((update) => allowedUpdates.includes(update));
+
+    if(!validupdates){
+        throw new error("Invalid updates");
+    }
+
+    if(user.skills.length > 5){
+       throw new error("Skills array cannot have more than 5 elements");
+    }
+
+        const updatedUser = await User.findByIdAndUpdate(userid , user, {new: true , runValidators : true});
          // updating the user by id . 
          // new : true will return the updated user object
         // runValidators : true will ensure that the validators defined in the schema are run when updating the user.
