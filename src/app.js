@@ -2,7 +2,9 @@ const express = require('express');
 const app = express(); // creating express js application 
 const ConnectDB  = require("./config/database");// connecting to the database
 const User = require("./models/user"); // importing the user model
-
+const {validateUserData} = require('./utils/validation'); // importing the validation function
+const {validateLoginData} = require('./utils/loginValidation'); // importing the login validation function
+const bcrypt = require('bcrypt'); // importing bcrypt for password hashing
 
 //app.use(); -> this will run for every request that comes to the server
 app.use(express.json()); // middleware to parse json data from the request body
@@ -62,12 +64,30 @@ app.delete("/delete",async(req,res)=>{
 
 // adding the data to the database . 
 app.post("/signup",async(req,res)=>{
-    try{
-    // creating instance of the user model .
-    const user = new User(req.body);
+    // industry standard flow  : 1) validate 2) encrypt password 3) create user and save to database . 
 
+    try{
+    validateUserData(req); // validate the user data from the request body
+    
+    const {firstName , lastName , emailid , password , age ,skills } = req.body; // destructuring the user data from the request body
+
+    const hashedPassword = await bcrypt.hash(req.body.password, 10); // hashing the password with bcrypt
+    console.log("Hashed Password: ", hashedPassword);
+        
+    // creating instance of the user model .
+    const user = new User(
+        {
+            firstName ,
+            lastName ,
+            emailid ,
+            password : hashedPassword, // saving the hashed password to the database
+            age ,
+            photourl : req.body.photourl || "https://png.pngtree.com/element_our/20200610/ourmid/pngtree-black-default-avatar-image_2237212.jpg", // setting default photo url if not provided
+        }
+    );
     // saving the user to the database
     await user.save();
+
     res.send("User created successfully");
     }
     catch(err){
@@ -77,14 +97,40 @@ app.post("/signup",async(req,res)=>{
         }
 
         if(err.name === 'ValidationError') {
+            // this will be only called if mongoose schema validation fails .
             // Handle validation errors
             return res.status(400).send(err.message);
         }
 
-         res.status(500).send("Error creating user");
+         res.status(500).send("Error creating user : "+err.message);
     }
 });
 
+// login API to authenticate the user
+app.post("/login",async(req,res)=>{
+    try{
+        validateLoginData(req);
+
+        const {emailid , password} = req.body;
+
+        // find the user or check if the emailid exists in the database
+        const user = await User.findOne({emailid : emailid});
+        if(!user){
+            throw new Error("Invalid credentials");
+        }
+        // compare the password with the hashed password in the database
+        const isMatch = await bcrypt.compare(password , user.password);
+
+        if(!isMatch){
+            throw new Error("Invalid credentials");
+        }
+        
+        res.send("Login successful");
+    }
+    catch(err){
+        res.status(400).send("Error logging in: " + err.message);
+    }
+});
 
 // updating the user data in the database by id .
 app.patch("/update/:userid",async(req,res)=>{

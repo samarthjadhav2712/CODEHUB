@@ -4,7 +4,9 @@ const validator = require('validator'); // importing the validator library to va
 //Schema creation
 const userSchema = new mongoose.Schema({
     firstName :{
-        type : String 
+        type : String ,
+        minlength : 2 ,
+        maxlength :20, 
     },
     lastName : {
         type : String 
