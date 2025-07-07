@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const validator = require('validator'); // importing the validator library to validate the email id//
+const bcrypt = require('bcrypt'); // importing bcryptjs for hashing passwords
+const jwt = require('jsonwebtoken'); // importing jsonwebtoken for creating JWT tokens
 
 //Schema creation
 const userSchema = new mongoose.Schema({
@@ -55,6 +57,22 @@ const userSchema = new mongoose.Schema({
     strict : true, // this will ensure that only the fields defined in the schema will be saved to the database
     timestamps : true // this will add createdAt and updatedAt fields to the schema
 });
+
+userSchema.methods.getJWT = async function(){
+    // always use this normal function to access the 'this' keyword in mongoose methods.
+    const user = this;
+
+     const token = await jwt.sign({_id : user._id} ,"secretkey" , {expiresIn : "1h"});
+     // {_id : user._id} is the payload of the JWT, which contains the user id , it needs object so we write like this .
+
+     return token;
+}
+
+userSchema.methods.comparePassword = async function(password){
+    const user  = this ;
+    const isPassword = await bcrypt.compare(password , user.password);
+    return isPassword;
+}
 
 //Model creation
 const User = mongoose.model("User" , userSchema);
