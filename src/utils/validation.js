@@ -15,9 +15,6 @@ const validateUserData = (req)=>{
     if(skills.length > 10){
         throw new Error("Skills cannot exceed 10 items");
     }
-    // if(firstName.length < 2 || firstName.length > 20){
-    //     throw new Error("First name must be between 2 and 20 characters");
-    // }
 }
 
 module.exports = {

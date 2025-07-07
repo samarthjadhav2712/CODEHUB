@@ -5,10 +5,16 @@ const User = require("./models/user"); // importing the user model
 const {validateUserData} = require('./utils/validation'); // importing the validation function
 const {validateLoginData} = require('./utils/loginValidation'); // importing the login validation function
 const bcrypt = require('bcrypt'); // importing bcrypt for password hashing
+const cookieParser = require('cookie-parser'); // importing cookie-parser to parse cookies from the request
+const jwt = require('jsonwebtoken'); // importing jsonwebtoken for creating JWT tokens
+const {userAuth} = require('./middlewares/auth');
+
 
 //app.use(); -> this will run for every request that comes to the server
-app.use(express.json()); // middleware to parse json data from the request body
 
+
+app.use(express.json()); // middleware to parse json data from the request body
+app.use(cookieParser()); // middleware to parse cookies from the request
 
 // getting the data from the database and sending it to the client .
 app.get("/get",async(req,res)=>{
@@ -26,6 +32,15 @@ app.get("/get",async(req,res)=>{
     }
 });
 
+app.get("/profile", userAuth , async(req,res)=>{
+    try{
+    const user = req.user;
+    res.send(user); // sending the user data to the client
+    }
+    catch(err){
+        return res.status(400).send("Error fetching profile data"+ err.message);
+    }
+});
 
 // Feed API to get all users from the database.
 app.get("/feed",async(req,res)=>{ 
@@ -42,7 +57,6 @@ app.get("/feed",async(req,res)=>{
         return res.status(400).send("Error fetching users");
     }
 });
-
 
 // deleting the user from the database by id .
 app.delete("/delete",async(req,res)=>{
@@ -106,6 +120,7 @@ app.post("/signup",async(req,res)=>{
     }
 });
 
+
 // login API to authenticate the user
 app.post("/login",async(req,res)=>{
     try{
@@ -116,21 +131,33 @@ app.post("/login",async(req,res)=>{
         // find the user or check if the emailid exists in the database
         const user = await User.findOne({emailid : emailid});
         if(!user){
-            throw new Error("Invalid credentials");
+            throw new Error("Invalid user");
         }
-        // compare the password with the hashed password in the database
-        const isMatch = await bcrypt.compare(password , user.password);
+        console.log("User found: ", user);
+        console.log("user password: ", user.password); 
+        console.log("Provided password: ", password);
 
-        if(!isMatch){
-            throw new Error("Invalid credentials");
+        // compare the password with the hashed password in the database
+        const isPassword = await bcrypt.compare(password , user.password);
+
+        if(isPassword){
+            // create  a JWT token . 
+            const token = await jwt.sign({_id : user._id} ,"secretkey");
+
+            // Add the Token to cookie & send the response back to the user . 
+            res.cookie("jwt_token", token);
+
+            res.send("Login successful");
         }
-        
-        res.send("Login successful");
+        else{
+            throw new Error("Invalid password");
+        }
     }
     catch(err){
         res.status(400).send("Error logging in: " + err.message);
     }
 });
+
 
 // updating the user data in the database by id .
 app.patch("/update/:userid",async(req,res)=>{
