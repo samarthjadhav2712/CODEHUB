@@ -85,4 +85,10 @@ authRouter.post("/login",async(req,res)=>{
     }
 });
 
+// logout API
+authRouter.post("/logout",async(req,res)=>{
+    res.cookie("jwt_token" ,null , {expires : new Date(Date.now())});
+    res.send("Logout Successfully");
+});
+
 module.exports = authRouter;
