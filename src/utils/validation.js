@@ -12,10 +12,36 @@ const validateUserData = (req)=>{
    if(!validator.isStrongPassword(password)){
         throw new Error("Password is not strong enough");
     }
-    if(skills.length > 10){
+    if(skills?.length > 10){
         throw new Error("Skills cannot exceed 10 items");
     }
 }
+
+const validatePassword = (req)=>{
+    const {password} = req.body;
+    if(!password){
+        throw new Error("Enter password , password is madatory !");
+    }
+    if(password.length < 5){
+        throw new Error("Password minimum length required 6");
+    }
+    if(!validator.isStrongPassword(password)){
+        throw new Error("Password is not strong enough");
+    }
+
+    const isAllowed = [
+        "password",
+        "oldpassword"
+    ];
+
+    const allowed =  Object.keys(req.body).every((field)=>{
+        return isAllowed.includes(field)}
+    );
+    
+    if(!allowed){
+        throw new Error("Invalid edit request (unrelated fields)");
+    }
+};
 
 const validateProfileEditData = (req)=>{
     const allowedEditFields = [
@@ -35,4 +61,5 @@ const validateProfileEditData = (req)=>{
 module.exports = {
     validateUserData,
     validateProfileEditData,
+    validatePassword
 };
