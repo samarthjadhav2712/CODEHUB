@@ -100,10 +100,12 @@ app.use(cookieParser()); // middleware to parse cookies from the request
 const authRouter = require('./Routes/auth');
 const profileRouter = require('./Routes/profile');
 const requestRouter = require('./Routes/request');
+const userRouter = require('./Routes/userRoute');
 
 app.use('/',authRouter);
 app.use('/',profileRouter);
 app.use('/',requestRouter);
+app.use('/',userRouter);
 
 // we should connect to the database before starting the server .
 ConnectDB()

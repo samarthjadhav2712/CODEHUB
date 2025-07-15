@@ -59,4 +59,42 @@ requestRouter.post("/request/send/:status/:toUserID", userAuth ,async(req,res)=>
     }
 });
 
+requestRouter.post("/request/review/:status/:requestId", userAuth , async(req,res)=>{
+    try{
+        const {status , requestId} = req.params;
+        const loggedInUser = req.user;
+
+        // validating the request status . 
+        const allowedStatus = ["accepted" , "rejected"];
+        if(!allowedStatus.includes(status)){
+            throw new Error("Status not allowed !");
+        }
+
+        // finding the user , where the requestid is _id , loggedinUser is toUserid , status is interested .
+        const connectionRequest = await ConnectionRequest.findOne({
+            _id : requestId ,
+            toUserID : loggedInUser._id,
+            status : "interested"
+        });
+
+        if(!connectionRequest){
+            throw new Error("connection Request not found in db ");
+        }
+
+        // changing the status & saving to db . 
+        connectionRequest.status = status;
+        const userdata = await connectionRequest.save();
+
+        const  touser = await User.findById(loggedInUser._id);
+
+        const fromuserId = connectionRequest.fromUserId;
+        const fromuser = await User.findById(fromuserId);
+
+        res.json({message : `${touser.firstName} has ${status} the request of ${fromuser.firstName}`});
+    }
+    catch(err){
+        return res.status(404).json({message : `Error , ${err.message}` });
+    }
+});
+
 module.exports = requestRouter;
