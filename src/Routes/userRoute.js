@@ -69,4 +69,45 @@ userRouter.get("/user/connections",userAuth , async(req,res)=>{
     }
 });
 
+const USER_SAFE_DATA = ["firstName" , "lastName" , "age" , "Gender" , "skills"];
+
+userRouter.get("/user/feed" , userAuth , async(req,res)=>{
+    /*
+        conditions to build this API :
+        1) user shld'nt see the cards where the user has already sent interested / rejected response to it .
+        2) user shld'nt see the cards , if that card is already in its connection . 
+        3) user shld'nt see themself in the feed card . 
+
+        connections in db - > ( max - sunil , samarth-sunil , samarth - shruti )
+    */
+   try{
+    const loggedInUser = req.user;
+
+    // get the users , where loggedin user is in connection .
+    const connections = await ConnectionRequest.find({
+        $or : [{fromUserId : loggedInUser._id} , {toUserID : loggedInUser._id}],
+    }).select( "fromUserId toUserID");
+
+    if(!connections || connections.length==0){
+        throw new Error("No feed / users found !!");
+    }
+
+    // store the unique users in set
+    const hideUsersFromFeed = new Set();
+    connections.forEach((req)=>{
+        hideUsersFromFeed.add(req.fromUserId),
+        hideUsersFromFeed.add(req.toUserID)
+    });
+
+    const users = await User.find({
+        _id : {$nin : Array.from(hideUsersFromFeed)},
+    }).select(USER_SAFE_DATA);
+
+    res.json({message : `Below is the feed for ${loggedInUser.firstName} : `, data : users});
+    }
+    catch(err){
+        return res.status(400).json({message :`Error : ${err.message}`});
+    }
+});
+
 module.exports = userRouter ;
