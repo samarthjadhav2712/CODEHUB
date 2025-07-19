@@ -82,26 +82,31 @@ userRouter.get("/user/feed" , userAuth , async(req,res)=>{
     */
    try{
     const loggedInUser = req.user;
+    const page = parseInt(req.query.page) || 1;
+    let limit = parseInt(req.query.limit) || 10;
+    limit = limit > 50 ? 50 : limit;
+
+    const skip = (page-1)*limit;
 
     // get the users , where loggedin user is in connection .
     const connections = await ConnectionRequest.find({
         $or : [{fromUserId : loggedInUser._id} , {toUserID : loggedInUser._id}],
     }).select( "fromUserId toUserID");
 
-    if(!connections || connections.length==0){
-        throw new Error("No feed / users found !!");
-    }
-
     // store the unique users in set
     const hideUsersFromFeed = new Set();
     connections.forEach((req)=>{
-        hideUsersFromFeed.add(req.fromUserId),
-        hideUsersFromFeed.add(req.toUserID)
+        hideUsersFromFeed.add(req.fromUserId.toString());
+        hideUsersFromFeed.add(req.toUserID.toString());
     });
+
+hideUsersFromFeed.add(loggedInUser._id.toString());
 
     const users = await User.find({
         _id : {$nin : Array.from(hideUsersFromFeed)},
-    }).select(USER_SAFE_DATA);
+    }).select(USER_SAFE_DATA)
+      .skip(skip)
+      .limit(limit);
 
     res.json({message : `Below is the feed for ${loggedInUser.firstName} : `, data : users});
     }
